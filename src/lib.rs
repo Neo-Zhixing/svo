@@ -1,32 +1,17 @@
 #![feature(untagged_unions)]
 #![feature(const_fn)]
 
-
 mod arena;
-pub mod dir;
-pub mod octree;
-pub mod index_path;
 pub mod bounds;
+pub mod dir;
+pub mod index_path;
+pub mod octree;
 
-
-pub use dir::{
-    Quadrant,
-    Edge,
-    Corner,
-    Face,
-};
-
-pub use octree::{
-    Octree,
-    NodeRef,
-    NodeRefMut,
-};
-
-pub use index_path::IndexPath;
-
+pub use arena::{Arena, ArenaHandle};
 pub use bounds::Bounds;
-pub use arena::{ArenaHandle, Arena};
-
+pub use dir::{Corner, Edge, Face, Quadrant};
+pub use index_path::IndexPath;
+pub use octree::{NodeRef, NodeRefMut, Octree};
 
 use std::fmt::Debug;
 

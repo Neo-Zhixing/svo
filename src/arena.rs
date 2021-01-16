@@ -4,7 +4,6 @@ use std::ops::{Index, IndexMut};
 
 use crate::Corner;
 
-
 const BLOCK_SIZE: u32 = 12;
 
 #[derive(Copy, Clone)]
@@ -58,7 +57,7 @@ impl<T: Copy> From<ArenaHandle<T>> for (usize, usize) {
 }
 
 impl<T: Copy> std::fmt::Debug for ArenaHandle<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error>{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let (block_num, item_num): (u32, u32) = self.into();
         f.write_fmt(format_args!("ArenaHandle({:?}, {:?})", block_num, item_num))
     }
@@ -75,16 +74,16 @@ impl<T: Copy> Eq for ArenaHandle<T> {}
 #[repr(C)]
 struct FreeSlot<T: Copy> {
     block_size: u8, // This value is 0 for free blocks
-    freemask: u8, // 0 means no children, 1 means has children
+    freemask: u8,   // 0 means no children, 1 means has children
     _reserved: u16,
     next: ArenaHandle<T>, // 32 bits
 }
 
 #[repr(C)]
 pub struct NodeSlot<T: Copy> {
-    block_size: u8, // This value is always OCCUPIED_FLAG for occupied nodes.
-    pub freemask: u8, // 0 means no children, 1 means has children
-    _reserved2: u16, // Alignment
+    block_size: u8,               // This value is always OCCUPIED_FLAG for occupied nodes.
+    pub freemask: u8,             // 0 means no children, 1 means has children
+    _reserved2: u16,              // Alignment
     pub children: ArenaHandle<T>, // 32 bits
     pub data: [T; 8],
 }
@@ -92,13 +91,12 @@ pub struct NodeSlot<T: Copy> {
 impl<T: Copy> NodeSlot<T> {
     pub fn child(&self, corner: Corner) -> ArenaHandle<T> {
         /// Given a mask an a location, returns n where the given '1' on the location
-           /// is the nth '1' counting from the Least Significant Bit.
+        /// is the nth '1' counting from the Least Significant Bit.
         fn mask_location_nth_one(mask: u8, location: u8) -> u8 {
             (mask & ((1 << location) - 1)).count_ones() as u8
         }
-        self.children.offset(
-            mask_location_nth_one(self.freemask, corner as u8) as u32
-        )
+        self.children
+            .offset(mask_location_nth_one(self.freemask, corner as u8) as u32)
     }
 }
 
@@ -111,9 +109,9 @@ pub struct Arena<T: Copy> {
     data: Vec<Box<[Slot<T>; 1 << BLOCK_SIZE]>>,
     freelist_heads: [ArenaHandle<T>; 8],
     newspace_top: ArenaHandle<T>, // new space to be allocated
-    pub(crate) size: u32, // number of allocated slots
-    pub(crate) num_blocks: u32, // number of allocated blocks
-    pub(crate) capacity: u32, // number of available slots
+    pub(crate) size: u32,         // number of allocated slots
+    pub(crate) num_blocks: u32,   // number of allocated blocks
+    pub(crate) capacity: u32,     // number of available slots
 }
 
 impl<T: Copy> Arena<T> {
@@ -160,16 +158,17 @@ impl<T: Copy> Arena<T> {
                 } else {
                     // Need to request new space
                     if remaining_space > 0 {
-                        self.freelist_push(remaining_space as u8 - 1, ArenaHandle::new(block_num, item_num + len));
+                        self.freelist_push(
+                            remaining_space as u8 - 1,
+                            ArenaHandle::new(block_num, item_num + len),
+                        );
                     }
                     self.newspace_top = ArenaHandle::none();
                 }
                 handle
             }
         } else {
-            self.freelist_heads[len as usize - 1] = unsafe {
-                self.get_slot(sized_head).free.next
-            };
+            self.freelist_heads[len as usize - 1] = unsafe { self.get_slot(sized_head).free.next };
             sized_head
         };
 
@@ -210,16 +209,17 @@ impl<T: Copy> Arena<T> {
         &mut self.data[block_num][item_num]
     }
     pub fn free(&mut self, handle: ArenaHandle<T>) {
-        let block_size = unsafe {
-            self.get_slot(handle).free.block_size
-        };
+        let block_size = unsafe { self.get_slot(handle).free.block_size };
         debug_assert!(block_size > 0, "Double free detected");
         let (block_num, item_num): (usize, usize) = handle.into();
         for i in item_num..(item_num + block_size as usize) {
             let block = &mut self.data[block_num][i];
             unsafe {
                 // Detect double free
-                debug_assert_eq!(block.free.block_size, block_size, "Overlapping handle detected");
+                debug_assert_eq!(
+                    block.free.block_size, block_size,
+                    "Overlapping handle detected"
+                );
                 block.occupied = std::mem::zeroed();
             }
         }
@@ -259,8 +259,12 @@ impl<T: Copy> Arena<T> {
             if old_have_children_at_i && new_have_children_at_i {
                 let (old_block_num, old_item_num): (usize, usize) = old_child_handle.into();
                 let (new_block_num, new_item_num): (usize, usize) = new_child_handle.into();
-                let new_item: *mut Slot<T> = &mut self.data[new_block_num][new_item_num + new_slot_num as usize] as *mut Slot<T>;
-                let old_item: *const Slot<T> = &self.data[old_block_num][old_item_num + old_slot_num as usize] as *const Slot<T>;
+                let new_item: *mut Slot<T> = &mut self.data[new_block_num]
+                    [new_item_num + new_slot_num as usize]
+                    as *mut Slot<T>;
+                let old_item: *const Slot<T> = &self.data[old_block_num]
+                    [old_item_num + old_slot_num as usize]
+                    as *const Slot<T>;
                 unsafe {
                     std::ptr::copy(old_item, new_item, 1);
                     let new_item = &mut *new_item;
@@ -290,9 +294,7 @@ impl<T: Copy> Arena<T> {
             let end = start + block_size;
             let ptr = block.as_ptr(); // pointer to 1<<BLOCK_SIZE Slot<T>
             let ptr = ptr as *const u8;
-            let data = unsafe {
-                std::slice::from_raw_parts(ptr, block_size)
-            };
+            let data = unsafe { std::slice::from_raw_parts(ptr, block_size) };
             slice[start..end].copy_from_slice(data);
         }
     }
@@ -302,18 +304,14 @@ impl<T: Copy> Index<ArenaHandle<T>> for Arena<T> {
     type Output = NodeSlot<T>;
     fn index(&self, index: ArenaHandle<T>) -> &Self::Output {
         let (block_num, item_num): (usize, usize) = index.into();
-        unsafe {
-            &self.data[block_num][item_num].occupied
-        }
+        unsafe { &self.data[block_num][item_num].occupied }
     }
 }
 
 impl<T: Copy> IndexMut<ArenaHandle<T>> for Arena<T> {
     fn index_mut(&mut self, index: ArenaHandle<T>) -> &mut Self::Output {
         let (block_num, item_num): (usize, usize) = index.into();
-        unsafe {
-            &mut self.data[block_num][item_num].occupied
-        }
+        unsafe { &mut self.data[block_num][item_num].occupied }
     }
 }
 
@@ -326,9 +324,12 @@ mod tests {
         assert_eq!(size_of::<Slot<u32>>(), 40);
         assert_eq!(size_of::<Slot<u32>>(), size_of::<Slot<u32>>());
 
-        let mut slot: Slot<u32> = unsafe {MaybeUninit::uninit().assume_init()};
+        let mut slot: Slot<u32> = unsafe { MaybeUninit::uninit().assume_init() };
         unsafe {
-            assert_eq!(&slot.free.block_size as *const u8, &slot.occupied.block_size as *const u8);
+            assert_eq!(
+                &slot.free.block_size as *const u8,
+                &slot.occupied.block_size as *const u8
+            );
             let magic: u8 = 0b11100010;
             slot.occupied.block_size = magic;
             assert_eq!(slot.free.block_size, magic);
@@ -339,21 +340,24 @@ mod tests {
     fn test_alloc() {
         {
             let mut arena: Arena<u32> = Arena::new();
-            for i in 0..((1<<BLOCK_SIZE) - 8) {
+            for i in 0..((1 << BLOCK_SIZE) - 8) {
                 let handle = arena.alloc(1);
                 let (block, item): (u32, u32) = handle.into();
                 assert_eq!(item, i);
                 assert_eq!(block, 0);
             }
-            assert_eq!(arena.capacity, 1<<BLOCK_SIZE);
+            assert_eq!(arena.capacity, 1 << BLOCK_SIZE);
             for i in 0..10 {
                 let handle = arena.alloc(1);
                 let (block, item): (u32, u32) = handle.into();
                 assert_eq!(item, i);
                 assert_eq!(block, 1);
             }
-            assert_eq!(arena.capacity, (1<<BLOCK_SIZE) * 2);
-            assert_eq!(arena.freelist_heads[7], ArenaHandle::new(0, (1 << BLOCK_SIZE) - 8));
+            assert_eq!(arena.capacity, (1 << BLOCK_SIZE) * 2);
+            assert_eq!(
+                arena.freelist_heads[7],
+                ArenaHandle::new(0, (1 << BLOCK_SIZE) - 8)
+            );
             let handle = arena.alloc(5);
             let (block, item): (u32, u32) = handle.into();
             assert_eq!(item, 10);
@@ -410,7 +414,7 @@ mod tests {
             node_ref.child(Corner::RearLeftBottom),
             node_ref.child(Corner::FrontLeftBottom),
             node_ref.child(Corner::RearLeftTop),
-            node_ref.child(Corner::FrontLeftTop)
+            node_ref.child(Corner::FrontLeftTop),
         ];
         arena[childrens[0]].data[0] = 33;
         arena[childrens[1]].data[0] = 34;
@@ -423,7 +427,7 @@ mod tests {
             node_ref.child(Corner::RearLeftBottom),
             node_ref.child(Corner::FrontLeftBottom),
             node_ref.child(Corner::RearLeftTop),
-            node_ref.child(Corner::FrontLeftTop)
+            node_ref.child(Corner::FrontLeftTop),
         ];
         assert_eq!(arena[childrens[0]].data[0], 33);
         assert_eq!(arena[childrens[1]].data[0], 34);
@@ -435,7 +439,7 @@ mod tests {
         let childrens = [
             node_ref.child(Corner::FrontLeftBottom),
             node_ref.child(Corner::RearLeftTop),
-            node_ref.child(Corner::FrontLeftTop)
+            node_ref.child(Corner::FrontLeftTop),
         ];
         assert_eq!(arena[childrens[0]].data[0], 34);
         assert_eq!(arena[childrens[1]].data[0], 35);

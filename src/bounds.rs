@@ -1,7 +1,6 @@
-use glam as math;
 use crate::{Corner, Face, IndexPath};
+use glam as math;
 use std::convert::TryInto;
-
 
 /// A cube with the origin at (bounds.x, bounds.y, bounds.z)
 /// spanning in +x, +y, +z direction with width bounds.width
@@ -32,10 +31,18 @@ impl Bounds {
     }
     pub fn from_discrete_grid(location: (u64, u64, u64), width: u64, gridsize: u64) -> Self {
         Bounds {
-            x: (location.0 * Self::MAX_WIDTH as u64 / gridsize).try_into().unwrap(),
-            y: (location.1 * Self::MAX_WIDTH as u64 / gridsize).try_into().unwrap(),
-            z: (location.2 * Self::MAX_WIDTH as u64 / gridsize).try_into().unwrap(),
-            width: (width * Self::MAX_WIDTH as u64 / gridsize).try_into().unwrap(),
+            x: (location.0 * Self::MAX_WIDTH as u64 / gridsize)
+                .try_into()
+                .unwrap(),
+            y: (location.1 * Self::MAX_WIDTH as u64 / gridsize)
+                .try_into()
+                .unwrap(),
+            z: (location.2 * Self::MAX_WIDTH as u64 / gridsize)
+                .try_into()
+                .unwrap(),
+            width: (width * Self::MAX_WIDTH as u64 / gridsize)
+                .try_into()
+                .unwrap(),
         }
     }
     pub fn get_position_with_gridsize(&self, gridsize: u64) -> (u64, u64, u64) {
@@ -49,11 +56,7 @@ impl Bounds {
         self.width as u64 * gridsize / Self::MAX_WIDTH as u64
     }
     pub fn get_position(&self) -> math::Vec3A {
-        math::Vec3A::new(
-            self.x as f32,
-            self.y as f32,
-            self.z as f32,
-        ) / (Self::MAX_WIDTH as f32)
+        math::Vec3A::new(self.x as f32, self.y as f32, self.z as f32) / (Self::MAX_WIDTH as f32)
     }
     pub fn get_width(&self) -> f32 {
         self.width as f32 / Self::MAX_WIDTH as f32
@@ -65,9 +68,24 @@ impl Bounds {
 
     pub fn corner(&self, corner: Corner) -> math::Vec3 {
         let vec = math::Vec3A::new(
-            (self.x + if corner.is_on_face(Face::Right) { self.width } else { 0 }) as f32,
-            (self.y + if corner.is_on_face(Face::Top) { self.width } else { 0 }) as f32,
-            (self.z + if corner.is_on_face(Face::Rear) { self.width } else { 0 }) as f32,
+            (self.x
+                + if corner.is_on_face(Face::Right) {
+                    self.width
+                } else {
+                    0
+                }) as f32,
+            (self.y
+                + if corner.is_on_face(Face::Top) {
+                    self.width
+                } else {
+                    0
+                }) as f32,
+            (self.z
+                + if corner.is_on_face(Face::Rear) {
+                    self.width
+                } else {
+                    0
+                }) as f32,
         ) / (Self::MAX_WIDTH as f32);
         vec.into()
     }
@@ -89,22 +107,23 @@ impl Bounds {
 
     pub fn intersects(&self, other: &Self) -> BoundsSpacialRelationship {
         // Check for disjoint
-        if (self.x + self.width <= other.x || other.x + other.width <= self.x) ||
-            (self.y + self.width <= other.y || other.y + other.width <= self.y) ||
-            (self.z + self.width <= other.z || other.z + other.width <= self.z) {
+        if (self.x + self.width <= other.x || other.x + other.width <= self.x)
+            || (self.y + self.width <= other.y || other.y + other.width <= self.y)
+            || (self.z + self.width <= other.z || other.z + other.width <= self.z)
+        {
             return BoundsSpacialRelationship::Disjoint;
         }
 
         // Other is smaller
-        if (other.x >= self.x && other.x + other.width <= self.x + self.width) &&
-            (other.y >= self.y && other.y + other.width <= self.y + self.width) &&
-            (other.z >= self.z && other.z + other.width <= self.z + self.width) {
+        if (other.x >= self.x && other.x + other.width <= self.x + self.width)
+            && (other.y >= self.y && other.y + other.width <= self.y + self.width)
+            && (other.z >= self.z && other.z + other.width <= self.z + self.width)
+        {
             return BoundsSpacialRelationship::Contain;
         }
         return BoundsSpacialRelationship::Intersect;
     }
 }
-
 
 impl From<IndexPath> for Bounds {
     fn from(index_path: IndexPath) -> Self {

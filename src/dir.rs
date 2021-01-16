@@ -78,7 +78,6 @@ impl Corner {
         AllDirectionIterator { current: 0 }
     }
 
-
     // Internal, Face, Quadrant
     pub fn subdivided_surfaces(&self) -> [(bool, Face, Quadrant); 6] {
         use Corner::*;
@@ -123,7 +122,7 @@ impl Corner {
                 (true, Right, RightBottom),
                 (false, Right, RightBottom),
                 (true, Rear, RightBottom),
-                (false, Rear, RightBottom)
+                (false, Rear, RightBottom),
             ],
             FrontRightBottom => [
                 (true, Bottom, RightBottom),
@@ -147,8 +146,8 @@ impl Corner {
                 (true, Right, LeftTop),
                 (false, Right, LeftTop),
                 (false, Front, RightTop),
-                (true, Front, RightTop)
-            ]
+                (true, Front, RightTop),
+            ],
         }
     }
 }
@@ -174,20 +173,19 @@ impl Iterator for AllDirectionIterator {
         (8, Some(8))
     }
 
-    fn count(self) -> usize where
-        Self: Sized {
+    fn count(self) -> usize
+    where
+        Self: Sized,
+    {
         8
     }
 }
 impl From<u8> for Corner {
     fn from(num: u8) -> Self {
         assert!(num < 8);
-        unsafe {
-            std::mem::transmute(num)
-        }
+        unsafe { std::mem::transmute(num) }
     }
 }
-
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -210,9 +208,7 @@ pub enum Edge {
 impl From<u8> for Edge {
     fn from(val: u8) -> Self {
         assert!(val < 12);
-        unsafe {
-            std::mem::transmute(val)
-        }
+        unsafe { std::mem::transmute(val) }
     }
 }
 
@@ -251,16 +247,14 @@ pub enum Face {
 impl From<u8> for Face {
     fn from(val: u8) -> Self {
         assert!(val < 6);
-        unsafe {
-            std::mem::transmute(val)
-        }
+        unsafe { std::mem::transmute(val) }
     }
 }
 
 impl Face {
     pub fn vertices(&self) -> [[Corner; 2]; 2] {
-        use Face::*;
         use Corner::*;
+        use Face::*;
         match self {
             Front => [
                 [FrontLeftBottom, FrontLeftTop],
@@ -278,14 +272,11 @@ impl Face {
                 [RearRightBottom, FrontRightBottom],
                 [RearRightTop, FrontRightTop],
             ],
-            Top => [
-                [RearLeftTop, FrontLeftTop],
-                [RearRightTop, FrontRightTop]
-            ],
+            Top => [[RearLeftTop, FrontLeftTop], [RearRightTop, FrontRightTop]],
             Bottom => [
                 [RearLeftBottom, FrontLeftBottom],
-                [RearRightBottom, FrontRightBottom]
-            ]
+                [RearRightBottom, FrontRightBottom],
+            ],
         }
     }
 }

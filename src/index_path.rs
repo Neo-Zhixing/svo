@@ -1,6 +1,6 @@
+use crate::Corner;
 use std::fmt::Write;
 use std::num::NonZeroU64;
-use crate::Corner;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct IndexPath(NonZeroU64);
@@ -9,9 +9,7 @@ impl IndexPath {
     const MAX_SIZE: u8 = 21;
 
     pub fn new() -> Self {
-        unsafe {
-            Self::from(NonZeroU64::new_unchecked(1))
-        }
+        unsafe { Self::from(NonZeroU64::new_unchecked(1)) }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -29,16 +27,12 @@ impl IndexPath {
     pub fn pop(&self) -> Self {
         assert!(!self.is_empty());
         let num = self.0.get() >> 3;
-        unsafe {
-            IndexPath(NonZeroU64::new_unchecked(num))
-        }
+        unsafe { IndexPath(NonZeroU64::new_unchecked(num)) }
     }
     pub fn push(&self, octant: Corner) -> Self {
         assert!(!self.is_full(), "The index path is full");
         let num = (self.0.get() << 3) | (octant as u64);
-        unsafe {
-            IndexPath(NonZeroU64::new_unchecked(num))
-        }
+        unsafe { IndexPath(NonZeroU64::new_unchecked(num)) }
     }
     pub fn count(&self) -> u8 {
         Self::MAX_SIZE - (Into::<u64>::into(*self).leading_zeros() / 3) as u8
@@ -56,13 +50,19 @@ impl IndexPath {
 }
 
 impl From<NonZeroU64> for IndexPath {
-    fn from(val: NonZeroU64) -> Self { Self(val) }
+    fn from(val: NonZeroU64) -> Self {
+        Self(val)
+    }
 }
 impl From<IndexPath> for NonZeroU64 {
-    fn from(index_path: IndexPath) -> NonZeroU64 { index_path.0 }
+    fn from(index_path: IndexPath) -> NonZeroU64 {
+        index_path.0
+    }
 }
 impl From<IndexPath> for u64 {
-    fn from(index_path: IndexPath) -> u64 { index_path.0.get() }
+    fn from(index_path: IndexPath) -> u64 {
+        index_path.0.get()
+    }
 }
 
 impl Iterator for IndexPath {

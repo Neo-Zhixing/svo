@@ -1,5 +1,5 @@
+use crate::{Arena, ArenaHandle, Bounds, Corner, IndexPath, Voxel};
 use glam::Vec3;
-use crate::{Bounds, Corner, IndexPath, Voxel, Arena, ArenaHandle};
 
 struct NodeInner<T: Voxel> {
     handle: ArenaHandle<T>,
@@ -36,7 +36,6 @@ impl<T: Voxel> NodeInner<T> {
         }
     }
 }
-
 
 pub struct NodeRef<'a, T: Voxel> {
     inner: NodeInner<T>,
@@ -107,7 +106,6 @@ impl<'a, T: Voxel> NodeRefMut<'a, T> {
     }
 }
 
-
 pub struct Octree<T: Voxel> {
     arena: Arena<T>,
     root: ArenaHandle<T>,
@@ -134,7 +132,7 @@ impl<T: Voxel> Octree<T> {
                 index_path: IndexPath::new(),
                 bounds: Bounds::new(),
                 data,
-            }
+            },
         }
     }
     pub fn root(&self) -> NodeRef<T> {
@@ -147,7 +145,7 @@ impl<T: Voxel> Octree<T> {
                 index_path: IndexPath::new(),
                 bounds: Bounds::new(),
                 data,
-            }
+            },
         }
     }
 
@@ -189,8 +187,15 @@ impl<T: Voxel> Octree<T> {
         self.arena[handle].data[corner as usize]
     }
 
-
-    fn set_internal(&mut self, handle: ArenaHandle<T>, mut x: u32, mut y: u32, mut z: u32, mut gridsize: u32, item: T) -> (T, bool) {
+    fn set_internal(
+        &mut self,
+        handle: ArenaHandle<T>,
+        mut x: u32,
+        mut y: u32,
+        mut z: u32,
+        mut gridsize: u32,
+        item: T,
+    ) -> (T, bool) {
         gridsize = gridsize / 2;
         let mut corner: u8 = 0;
         if x >= gridsize {
@@ -241,13 +246,11 @@ impl<T: Voxel> Octree<T> {
             }
         }
 
-        return (T::avg(&node_ref.data), false)
+        return (T::avg(&node_ref.data), false);
     }
     pub fn set(&mut self, x: u32, y: u32, z: u32, gridsize: u32, item: T) {
-        let (data, _collapsed) = self.set_internal(
-            self.root().inner.handle,
-            x, y, z, gridsize, item
-        );
+        let (data, _collapsed) =
+            self.set_internal(self.root().inner.handle, x, y, z, gridsize, item);
         self.root_data = data;
     }
     #[inline]
@@ -261,8 +264,14 @@ impl<T: Voxel> Octree<T> {
 }
 
 impl<T: Voxel> Octree<T> {
-    pub fn signed_distance_field_recursive<F>(signed_distance_field: &F, fill: T, lod: u8, mut node: NodeRefMut<T>)
-        where F: Fn(Vec3) -> f32 {
+    pub fn signed_distance_field_recursive<F>(
+        signed_distance_field: &F,
+        fill: T,
+        lod: u8,
+        mut node: NodeRefMut<T>,
+    ) where
+        F: Fn(Vec3) -> f32,
+    {
         assert!(!node.inner.handle.is_none()); // Can't be a virtual node
         let mut childmask: u8 = 0;
         for (i, dir) in Corner::all().enumerate() {
@@ -289,7 +298,7 @@ impl<T: Voxel> Octree<T> {
                 }
                 // Set the childmask here so it can be handled later on.
             }
-        };
+        }
         if lod > 0 {
             node.set_leaf_childmask(childmask);
 
@@ -299,13 +308,19 @@ impl<T: Voxel> Octree<T> {
                     continue;
                 }
                 let child = node.child(dir);
-                Octree::signed_distance_field_recursive(signed_distance_field, fill, lod - 1, child);
-            };
+                Octree::signed_distance_field_recursive(
+                    signed_distance_field,
+                    fill,
+                    lod - 1,
+                    child,
+                );
+            }
         }
-
     }
     pub fn from_signed_distance_field<F>(field: F, fill: T, lod: u8) -> Octree<T>
-        where F: Fn(Vec3) -> f32 {
+    where
+        F: Fn(Vec3) -> f32,
+    {
         let mut octree = Octree::new();
         Octree::signed_distance_field_recursive(&field, fill, lod, octree.root_mut());
         octree
@@ -318,9 +333,8 @@ mod tests {
 
     #[test]
     fn test_signed_distance_field() {
-        let _octree: Octree<u16> = Octree::from_signed_distance_field(|l: Vec3| {
-            3.0 - l.length()
-        }, 1, 2);
+        let _octree: Octree<u16> =
+            Octree::from_signed_distance_field(|l: Vec3| 3.0 - l.length(), 1, 2);
     }
 
     #[test]
@@ -328,8 +342,8 @@ mod tests {
         let mut octree: Octree<u16> = Octree::new();
         for (i, corner) in Corner::all().enumerate() {
             let (x, y, z) = corner.position_offset();
-            octree.set(x as u32,y as u32,z as u32,8, 3);
-            assert_eq!(octree.get(x as u32,y as u32, z as u32,8), 3);
+            octree.set(x as u32, y as u32, z as u32, 8, 3);
+            assert_eq!(octree.get(x as u32, y as u32, z as u32, 8), 3);
 
             if i < 7 {
                 assert_eq!(octree.arena.size, 3);
@@ -341,4 +355,3 @@ mod tests {
         }
     }
 }
-
