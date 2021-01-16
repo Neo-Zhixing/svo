@@ -1,6 +1,6 @@
 use std::fmt::Write;
 use std::num::NonZeroU64;
-use crate::dir::Corner;
+use crate::Corner;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct IndexPath(NonZeroU64);

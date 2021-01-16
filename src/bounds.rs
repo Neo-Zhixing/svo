@@ -1,6 +1,5 @@
 use glam as math;
-use super::index_path::IndexPath;
-use crate::dir::{Corner, Face};
+use crate::{Corner, Face, IndexPath};
 use std::convert::TryInto;
 
 

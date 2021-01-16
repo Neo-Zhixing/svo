@@ -7,6 +7,27 @@ pub mod dir;
 pub mod octree;
 pub mod index_path;
 pub mod bounds;
+
+
+pub use dir::{
+    Quadrant,
+    Edge,
+    Corner,
+    Face,
+};
+
+pub use octree::{
+    Octree,
+    NodeRef,
+    NodeRefMut,
+};
+
+pub use index_path::IndexPath;
+
+pub use bounds::Bounds;
+pub use arena::{ArenaHandle, Arena};
+
+
 use std::fmt::Debug;
 
 pub trait Voxel: Copy + Clone + Default + Eq + Debug {

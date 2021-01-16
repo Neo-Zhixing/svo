@@ -1,9 +1,5 @@
-use crate::arena::{Arena, ArenaHandle};
-use crate::Voxel;
-use crate::index_path::IndexPath;
-use crate::dir::Corner;
 use glam::Vec3;
-use crate::bounds::Bounds;
+use crate::{Bounds, Corner, IndexPath, Voxel, Arena, ArenaHandle};
 
 struct NodeInner<T: Voxel> {
     handle: ArenaHandle<T>,

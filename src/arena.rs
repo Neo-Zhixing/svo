@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::ops::{Index, IndexMut};
 
-use crate::dir::Corner;
+use crate::Corner;
 
 
 const BLOCK_SIZE: u32 = 12;
