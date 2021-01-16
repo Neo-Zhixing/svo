@@ -1,6 +1,3 @@
-use std::ops::{Index, IndexMut};
-use std::mem::MaybeUninit;
-use std::iter::StepBy;
 //          Cell Corners
 //
 //       2-------------------6

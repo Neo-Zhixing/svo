@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::ops::{Index, IndexMut};
-use std::num::NonZeroU16;
+
 use crate::dir::Corner;
-use std::fmt::Debug;
+
 
 const BLOCK_SIZE: u32 = 12;
 
@@ -187,7 +187,7 @@ impl<T: Copy> Arena<T> {
     }
     fn alloc_block(&mut self) -> u32 {
         let block_index = self.data.len() as u32;
-        let mut block = Box::new(unsafe {
+        let block = Box::new(unsafe {
             MaybeUninit::<[Slot<T>; (1 << BLOCK_SIZE)]>::zeroed().assume_init()
         });
         self.data.push(block);

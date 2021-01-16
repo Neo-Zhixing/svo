@@ -1,7 +1,7 @@
 use crate::arena::{Arena, ArenaHandle};
 use crate::Voxel;
 use crate::index_path::IndexPath;
-use crate::dir::{Corner, Face};
+use crate::dir::Corner;
 use glam::Vec3;
 use crate::bounds::Bounds;
 
@@ -248,7 +248,7 @@ impl<T: Voxel> Octree<T> {
         return (T::avg(&node_ref.data), false)
     }
     pub fn set(&mut self, x: u32, y: u32, z: u32, gridsize: u32, item: T) {
-        let (data, collapsed) = self.set_internal(
+        let (data, _collapsed) = self.set_internal(
             self.root().inner.handle,
             x, y, z, gridsize, item
         );
@@ -322,7 +322,7 @@ mod tests {
 
     #[test]
     fn test_signed_distance_field() {
-        let octree: Octree<u16> = Octree::from_signed_distance_field(|l: Vec3| {
+        let _octree: Octree<u16> = Octree::from_signed_distance_field(|l: Vec3| {
             3.0 - l.length()
         }, 1, 2);
     }

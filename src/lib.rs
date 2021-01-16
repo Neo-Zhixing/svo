@@ -1,22 +1,12 @@
-#![feature(maybe_uninit_uninit_array)]
 #![feature(untagged_unions)]
 #![feature(const_fn)]
-#![feature(array_map)]
-#![feature(const_generics)]
-#![feature(test)]
-#![feature(alloc_layout_extra)]
-#![feature(allocator_api)]
-#![feature(maybe_uninit_extra)]
 
 
 mod arena;
-mod utils;
-pub mod mesher;
 pub mod dir;
 pub mod octree;
 pub mod index_path;
 pub mod bounds;
-use utils::stack;
 use std::fmt::Debug;
 
 pub trait Voxel: Copy + Clone + Default + Eq + Debug {
