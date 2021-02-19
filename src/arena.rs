@@ -75,16 +75,16 @@ impl<T: Copy> Eq for ArenaHandle<T> {}
 #[repr(C)]
 struct FreeSlot<T: Copy> {
     pub(crate) block_size: u8, // This value is 0 for free blocks
-    freemask: u8,   // 0 means no children, 1 means has children
+    freemask: u8,              // 0 means no children, 1 means has children
     _reserved: u16,
     next: ArenaHandle<T>, // 32 bits
 }
 
 #[repr(C)]
 pub struct NodeSlot<T: Copy> {
-    pub(crate) block_size: u8,               // This value is always OCCUPIED_FLAG for occupied nodes.
-    pub freemask: u8,             // 0 means no children, 1 means has children
-    _reserved2: u16,              // Alignment
+    pub(crate) block_size: u8, // This value is always OCCUPIED_FLAG for occupied nodes.
+    pub freemask: u8,          // 0 means no children, 1 means has children
+    _reserved2: u16,           // Alignment
     pub children: ArenaHandle<T>, // 32 bits
     pub data: [T; 8],
 }
