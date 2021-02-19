@@ -1,7 +1,6 @@
 pub mod io;
 use crate::{Arena, ArenaHandle, Bounds, Corner, IndexPath, Voxel};
 use glam::Vec3;
-use std::io::Write;
 
 struct NodeInner<T: Voxel> {
     handle: ArenaHandle<T>,

@@ -1,7 +1,6 @@
-use crate::arena::NodeSlot;
 use crate::{Arena, ArenaHandle, Octree, Voxel};
-use std::collections::{HashMap, VecDeque};
-use std::io::{BufWriter, Read, Write};
+use std::collections::VecDeque;
+use std::io::{Read, Write};
 use std::mem::size_of;
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 
@@ -55,9 +54,8 @@ impl<T: Voxel> Octree<T> {
     }
 
     pub fn read<R: Read>(reader: &mut R) -> std::io::Result<Self> {
-        let mut arena: Arena<T> = Arena::new();
         let mut octree = Octree {
-            arena,
+            arena: Arena::new(),
             root: ArenaHandle::new(0, 0),
             root_data: Default::default(),
         };
@@ -66,7 +64,7 @@ impl<T: Voxel> Octree<T> {
             reader.read_exact(from_raw_parts_mut(
                 &mut octree.root_data as *mut T as *mut u8,
                 size_of::<T>(),
-            ));
+            ))?;
         }
 
         // Mapping from file-space indices to (Parent, BlockSize)
@@ -110,6 +108,6 @@ impl<T: Voxel> Octree<T> {
                 }
             }
         }
-        Ok((octree))
+        Ok(octree)
     }
 }
