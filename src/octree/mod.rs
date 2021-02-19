@@ -1,5 +1,7 @@
+pub mod io;
 use crate::{Arena, ArenaHandle, Bounds, Corner, IndexPath, Voxel};
 use glam::Vec3;
+use std::io::Write;
 
 struct NodeInner<T: Voxel> {
     handle: ArenaHandle<T>,
@@ -90,6 +92,9 @@ impl<'a, T: Voxel> NodeRefMut<'a, T> {
         &self.inner.bounds
     }
     /// Only applicable on leaf nodes
+    /// Assuming that the current node is a leaf node (self.leafmask == 0),
+    /// this function allocates enough space for the given new leaf mask,
+    /// and update the current freemask and children pointer for the node.
     pub fn set_leaf_childmask(&mut self, childmask: u8) {
         if childmask == 0 {
             return;
@@ -264,7 +269,7 @@ impl<T: Voxel> Octree<T> {
 }
 
 impl<T: Voxel> Octree<T> {
-    pub fn signed_distance_field_recursive<F>(
+    fn signed_distance_field_recursive<F>(
         signed_distance_field: &F,
         fill: T,
         lod: u8,

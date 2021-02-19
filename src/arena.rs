@@ -4,12 +4,13 @@ use std::ops::{Index, IndexMut};
 
 use crate::Corner;
 
-const BLOCK_SIZE: u32 = 12;
+const BLOCK_SIZE: u32 = 13;
+type Block<T> = [Slot<T>; 1 << BLOCK_SIZE];
 
 #[derive(Copy, Clone)]
 pub struct ArenaHandle<T: Copy> {
     _marker: PhantomData<T>,
-    index: u32,
+    pub(crate) index: u32,
 }
 
 impl<T: Copy> ArenaHandle<T> {
@@ -23,13 +24,13 @@ impl<T: Copy> ArenaHandle<T> {
     pub fn is_none(&self) -> bool {
         self.index == std::u32::MAX
     }
-    fn new(block_num: u32, item_num: u32) -> Self {
+    pub(crate) fn new(block_num: u32, item_num: u32) -> Self {
         ArenaHandle {
             _marker: PhantomData,
             index: (block_num << BLOCK_SIZE) | item_num,
         }
     }
-    fn offset(&self, n: u32) -> Self {
+    pub(crate) fn offset(&self, n: u32) -> Self {
         let (block_num, item_num): (u32, u32) = self.into();
         ArenaHandle::new(block_num, item_num + n)
     }
@@ -73,7 +74,7 @@ impl<T: Copy> Eq for ArenaHandle<T> {}
 
 #[repr(C)]
 struct FreeSlot<T: Copy> {
-    block_size: u8, // This value is 0 for free blocks
+    pub(crate) block_size: u8, // This value is 0 for free blocks
     freemask: u8,   // 0 means no children, 1 means has children
     _reserved: u16,
     next: ArenaHandle<T>, // 32 bits
@@ -81,7 +82,7 @@ struct FreeSlot<T: Copy> {
 
 #[repr(C)]
 pub struct NodeSlot<T: Copy> {
-    block_size: u8,               // This value is always OCCUPIED_FLAG for occupied nodes.
+    pub(crate) block_size: u8,               // This value is always OCCUPIED_FLAG for occupied nodes.
     pub freemask: u8,             // 0 means no children, 1 means has children
     _reserved2: u16,              // Alignment
     pub children: ArenaHandle<T>, // 32 bits
@@ -106,7 +107,7 @@ union Slot<T: Copy> {
 }
 
 pub struct Arena<T: Copy> {
-    data: Vec<Box<[Slot<T>; 1 << BLOCK_SIZE]>>,
+    data: Vec<Box<Block<T>>>,
     freelist_heads: [ArenaHandle<T>; 8],
     newspace_top: ArenaHandle<T>, // new space to be allocated
     pub(crate) size: u32,         // number of allocated slots
@@ -195,9 +196,7 @@ impl<T: Copy> Arena<T> {
     }
     fn freelist_push(&mut self, n: u8, handle: ArenaHandle<T>) {
         let n = n as usize;
-        unsafe {
-            self.get_slot_mut(handle).free.next = self.freelist_heads[n];
-        }
+        self.get_slot_mut(handle).free.next = self.freelist_heads[n];
         self.freelist_heads[n] = handle;
     }
     fn get_slot(&self, handle: ArenaHandle<T>) -> &Slot<T> {
@@ -289,7 +288,7 @@ impl<T: Copy> Arena<T> {
     }
     pub fn copy_data_into_slice(&self, slice: &mut [u8]) {
         for (i, block) in self.data.iter().enumerate() {
-            let block_size = std::mem::size_of::<[Slot<T>; 1 << BLOCK_SIZE]>();
+            let block_size = std::mem::size_of::<Block<T>>();
             let start = i * block_size;
             let end = start + block_size;
             let ptr = block.as_ptr(); // pointer to 1<<BLOCK_SIZE Slot<T>
@@ -334,6 +333,11 @@ mod tests {
             slot.occupied.block_size = magic;
             assert_eq!(slot.free.block_size, magic);
         }
+
+        // So that one block maps to three GPU memory pages, 3 * 64K
+        let block_size = std::mem::size_of::<Block<u16>>();
+        let gpu_page_size = 64 * 1024;
+        assert_eq!(block_size, 3 * gpu_page_size);
     }
 
     #[test]

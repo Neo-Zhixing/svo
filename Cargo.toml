@@ -10,3 +10,4 @@ license = "Apache-2.0"
 
 [dependencies]
 glam = "0.12"
+ahash = "0.7"
