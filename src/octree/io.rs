@@ -126,7 +126,12 @@ impl<T: Voxel> Octree<T> {
         } else {
             fences[lod as usize]
         };
-        while !block_size_map.is_empty() && slots_loaded < total_slots {
+        let total_nonleaf_slots = if (lod-1) as usize >= fences.len() {
+            u32::MAX
+        } else {
+            fences[(lod-1) as usize]
+        };
+        while !block_size_map.is_empty() {
             let (parent_handle, block_size) = block_size_map.pop_front().unwrap();
 
             let block = octree.arena.alloc(block_size as u32);
@@ -146,14 +151,25 @@ impl<T: Voxel> Octree<T> {
                         &mut node_ref.freemask,
                         size_of::<u8>(),
                     ))?;
-                    if node_ref.freemask != 0 {
-                        // has children
-                        reader.read_exact(from_raw_parts_mut::<u8>(
-                            &mut node_ref.children as *mut ArenaHandle<T> as *mut u8,
-                            size_of::<ArenaHandle<T>>(),
-                        ))?;
-                        block_size_map.push_back((node, node_ref.freemask.count_ones() as u8));
+                    if slots_loaded < total_nonleaf_slots {
+                        // non-leaf slot
+                        if node_ref.freemask != 0 {
+                            // has children
+                            reader.read_exact(from_raw_parts_mut::<u8>(
+                                &mut node_ref.children as *mut ArenaHandle<T> as *mut u8,
+                                size_of::<ArenaHandle<T>>(),
+                            ))?;
+                            block_size_map.push_back((node, node_ref.freemask.count_ones() as u8));
+                        }
+                    } else {
+                        // leaf slot
+                        if node_ref.freemask != 0 {
+                            // has children
+                            reader.seek(SeekFrom::Current(size_of::<ArenaHandle<T>>() as i64))?;
+                        }
+                        node_ref.freemask = 0; // Force to be a leaf
                     }
+
                     reader.read_exact(from_raw_parts_mut::<u8>(
                         &mut node_ref.data as *mut T as *mut u8,
                         size_of::<[T; 8]>(),
